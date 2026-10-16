@@ -6,22 +6,10 @@ Built on TensorFlow, Human Mesh Recovery (HMR), DeepLab semantic segmentation, a
 
 ---
 
-## 📸 Screenshots & Previews
-
-### Studio Lookbook Interface
-The landing view showcases Scandinavian studio design, reference vertical ruler calibrations, and instant sample previews.
+## 📸 Preview
 
 <div align="center">
-  <img src="docs/screenshots/hero_studio_preview.png" alt="Measure-Mate Studio Home View" width="850px" style="border-radius: 4px; box-shadow: 0 4px 24px rgba(0,0,0,0.08);" />
-</div>
-
-<br/>
-
-### 3D Measurement & Mesh Analysis Workspace
-The 3-column workspace features photo ingestion, interactive Three.js 3D body mesh recovery with orbit controls, and live extraction of 11 verified anatomical measurements.
-
-<div align="center">
-  <img src="docs/screenshots/measurement_workspace_preview.png" alt="Measure-Mate Measurement Workspace" width="850px" style="border-radius: 4px; box-shadow: 0 4px 24px rgba(0,0,0,0.08);" />
+  <img src="docs/screenshots/preview.png" alt="Measure-Mate Studio Interface" width="900px" style="border-radius: 4px; box-shadow: 0 4px 24px rgba(0,0,0,0.08);" />
 </div>
 
 ---

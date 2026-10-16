@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Measure Mate — Body measurements, made simple.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-studio: #f6f7f9;
+      --bg-white: #ffffff;
+      --text-main: #111215;
+      --text-muted: #5e626e;
+      --text-light: #7b808e;
+      --border-subtle: #e5e7eb;
+      --border-card: #f0f2f5;
+      --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.035);
+      --radius-subtle: 4px;
+    }
+
+    html,
+    body {
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      background-color: var(--bg-studio);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Single-View Full Container ── */
+    .app-viewport {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      background: radial-gradient(
+        ellipse 80% 65% at 50% 40%,
+        #ffffff 0%,
+        #f8f9fa 50%,
+        var(--bg-studio) 100%
+      );
+    }
+
+    /* ── Topbar / Header ── */
+    .topbar {
+      width: 100%;
+      padding: 22px 56px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+    }
+
+    /* Logo badge + name */
+    .brand-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-badge {
+      border: 1.8px solid #0f1115;
+      border-radius: 1px;
+      padding: 3px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.12em;
+      line-height: 0.95;
+      font-weight: 800;
+      font-size: 10.5px;
+      user-select: none;
+    }
+
+    .brand-badge span {
+      display: block;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #0f1115;
+    }
+
+    /* Navigation Links */
+    .nav-links {
+      display: flex;
+      align-items: center;
+      list-style: none;
+      gap: 32px;
+    }
+
+    .nav-links li a {
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #3f424b;
+      letter-spacing: -0.01em;
+      position: relative;
+      padding-bottom: 5px;
+      transition: color 0.15s ease;
+    }
+
+    .nav-links li a:hover {
+      color: #0f1115;
+    }
+
+    .nav-links li.active a {
+      color: #0f1115;
+      font-weight: 600;
+    }
+
+    .nav-links li.active a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #0f1115;
+    }
+
+    /* Topbar Right Icons */
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: #1a1c22;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      opacity: 0.6;
+      transform: translateY(-1px);
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 1.8;
+    }
+
+    /* ── Main Stage Grid (Left text, Center model + ruler, Right metrics) ── */
+    .main-stage {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 56px;
+      display: grid;
+      grid-template-columns: 360px 1fr 310px;
+      align-items: center;
+      gap: 30px;
+      position: relative;
+      z-index: 20;
+    }
+
+    /* ── Left Column: Headline & Social proof ── */
+    .left-content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-bottom: 24px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #5b606c;
+    }
+
+    .hero-title {
+      font-size: clamp(38px, 3.6vw, 48px);
+      line-height: 1.08;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      color: #0f1115;
+    }
+
+    .hero-desc {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--text-muted);
+      max-width: 330px;
+    }
+
+    /* Social Proof Avatars */
+    .social-proof {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .avatar-stack {
+      display: flex;
+      align-items: center;
+    }
+
+    .avatar-img {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid #ffffff;
+      margin-left: -7px;
+      object-fit: cover;
+      background: #e2e4e8;
+    }
+
+    .avatar-img:first-child {
+      margin-left: 0;
+    }
+
+    .social-text {
+      font-size: 11px;
+      line-height: 1.35;
+      color: #4b4f59;
+      font-weight: 500;
+    }
+
+    .social-text strong {
+      color: #111215;
+      font-weight: 700;
+    }
+
+    /* ── Center Stage: Model + Architectural SVG Ruler ── */
+    .center-stage {
+      position: relative;
+      height: 100%;
+      max-height: 480px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .stage-wrapper {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      height: 100%;
+    }
+
+    /* SVG Ruler Component */
+    .ruler-svg {
+      height: 100%;
+      width: 90px;
+      flex-shrink: 0;
+      overflow: visible;
+      user-select: none;
+    }
+
+    .ruler-text {
+      font-family: 'Plus Jakarta Sans', monospace, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      fill: #4b4f58;
+      text-anchor: end;
+    }
+
+    .ruler-tick {
+      stroke: #7a7e89;
+      stroke-width: 1.2;
+    }
+
+    .ruler-axis {
+      stroke: #8a8e99;
+      stroke-width: 1;
+    }
+
+    /* Model Profile Cutout */
+    .model-container {
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .model-img {
+      height: 88%;
+      max-height: 430px;
+      width: auto;
+      object-fit: contain;
+      user-select: none;
+      pointer-events: none;
+      filter: contrast(1.05) brightness(0.98);
+      transform: translateY(2px);
+    }
+
+    /* Horizontal Floor/Ground Line */
+    .ground-line {
+      position: absolute;
+      bottom: 0;
+      left: 70px;
+      right: -80px;
+      height: 1px;
+      background: #8a8e99;
+      opacity: 0.8;
+      z-index: 5;
+    }
+
+    /* ── Right Column: "Your Measurements" Card ── */
+    .measurements-card {
+      background: var(--bg-white);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-subtle);
+      box-shadow: var(--card-shadow);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 2px;
+    }
+
+    .card-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #0f1115;
+      letter-spacing: -0.01em;
+    }
+
+    .unit-switch {
+      background: #ffffff;
+      border: 1px solid #e1e4e8;
+      border-radius: 12px;
+      padding: 3px 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #3b3f49;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .unit-switch svg {
+      width: 9px;
+      height: 9px;
+      stroke-width: 2.2;
+    }
+
+    /* Measurement Table Rows */
+    .measurement-rows {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .measure-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-top: 1px solid #f2f3f5;
+    }
+
+    .measure-item:first-child {
+      border-top: none;
+      padding-top: 4px;
+    }
+
+    .measure-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .measure-icon {
+      width: 22px;
+      height: 22px;
+      color: #17181d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .measure-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 1.6;
+    }
+
+    .measure-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #33363f;
+    }
+
+    .measure-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f1115;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Bottom Action Row (Upload images, Auto-detect landmarks, Start Measuring) ── */
+    .bottom-bar {
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 56px 22px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 340px;
+      gap: 16px;
+      align-items: stretch;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 40;
+    }
+
+    /* Bottom Feature Card */
+    .feature-box {
+      background: var(--bg-white);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-subtle);
+      box-shadow: var(--card-shadow);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .feature-box:hover {
+      transform: translateY(-2px);
+      border-color: #dcdfe4;
+    }
+
+    .feature-icon-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #f4f5f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #17181c;
+      flex-shrink: 0;
+    }
+
+    .feature-icon-circle svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 1.6;
+    }
+
+    .feature-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .feature-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f1115;
+    }
+
+    .feature-sub {
+      font-size: 11px;
+      color: var(--text-light);
+      line-height: 1.35;
+    }
+
+    /* Black CTA Box */
+    .start-measuring-btn {
+      background: #111215;
+      color: #ffffff;
+      border: 1px solid #111215;
+      border-radius: var(--radius-subtle);
+      padding: 16px 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+      box-shadow: 0 4px 16px rgba(17, 18, 21, 0.15);
+    }
+
+    .start-measuring-btn:hover {
+      background: #22242a;
+      transform: translateY(-2px);
+    }
+
+    .start-measuring-btn svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 2.2;
+      transition: transform 0.15s ease;
+    }
+
+    .start-measuring-btn:hover svg {
+      transform: translateX(4px);
+    }
+
+    /* ── Responsive adjustments ── */
+    @media (max-height: 740px) {
+      .topbar { padding: 14px 44px 8px; }
+      .main-stage { padding: 0 44px; }
+      .bottom-bar { padding: 0 44px 14px; }
+      .hero-title { font-size: 36px; }
+      .hero-desc { font-size: 12.5px; }
+      .measure-item { padding: 8px 0; }
+      .feature-box { padding: 12px 16px; }
+      .start-measuring-btn { padding: 12px 20px; font-size: 14px; }
+    }
+
+    @media (max-width: 1100px) {
+      html, body { height: auto; max-height: none; overflow: auto; }
+      .app-viewport { height: auto; min-height: 100vh; gap: 24px; }
+      .main-stage { grid-template-columns: 1fr; gap: 24px; padding: 20px 24px; }
+      .bottom-bar { grid-template-columns: 1fr; padding: 20px 24px; }
+      .center-stage { height: 400px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-viewport">
+    <!-- Topbar Header -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <!-- Logo -->
+        <a href="/" class="brand-wrap" aria-label="Measure Mate Home">
+          <div class="brand-badge">
+            <span>ME</span>
+            <span>MA</span>
+          </div>
+          <span class="brand-title">Measure Mate</span>
+        </a>
+
+        <!-- Main Navigation Links -->
+        <nav aria-label="Main Navigation">
+          <ul class="nav-links">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/how-it-works">How it works</a></li>
+            <li><a href="/samples">Measurements</a></li>
+            <li><a href="/api">API</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <!-- Right Utility Icons (Account and Settings) -->
+      <div class="topbar-right">
+        <!-- Account / Profile -->
+        <button class="icon-btn" aria-label="Account" title="Account">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"></circle>
+            <path d="M20 21a8 8 0 1 0-16 0"></path>
+          </svg>
+        </button>
+
+        <!-- Settings -->
+        <button class="icon-btn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Stage Grid (Left text, Center model + ruler, Right card) -->
+    <main class="main-stage">
+      <!-- Left Column -->
+      <section class="left-content">
+        <span class="eyebrow">Measure Smarter</span>
+        <h1 class="hero-title">
+          Body measurements,<br />made simple.
+        </h1>
+        <p class="hero-desc">
+          Upload a few photos and get accurate body measurements powered by AI. Perfect for tailoring, better fitting clothes and a more personalized shopping experience.
+        </p>
+
+        <!-- Social Proof User Avatars -->
+        <div class="social-proof">
+          <div class="avatar-stack">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" alt="User 1" class="avatar-img" />
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&auto=format&fit=crop&q=80" alt="User 2" class="avatar-img" />
+            <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&auto=format&fit=crop&q=80" alt="User 3" class="avatar-img" />
+          </div>
+          <p class="social-text">
+            <strong>10K+</strong> people already measuring<br />smarter with Measure Mate.
+          </p>
+        </div>
+      </section>
+
+      <!-- Center Stage: Cutout Model with Precise Vector Ruler and Ground Line -->
+      <section class="center-stage">
+        <div class="stage-wrapper">
+          <!-- Precise Architectural SVG Ruler -->
+          <svg class="ruler-svg" viewBox="0 0 90 480" preserveAspectRatio="none">
+            <!-- Vertical axis line from top down to floor -->
+            <line x1="72" y1="12" x2="72" y2="479" class="ruler-axis" />
+
+            <!-- Ruler markings: 200 down to 140 -->
+            <!-- 200 cm (y = 20) -->
+            <text x="56" y="24" class="ruler-text">200</text>
+            <line x1="62" y1="20" x2="72" y2="20" class="ruler-tick" />
+
+            <!-- 195 cm (y = 44) -->
+            <text x="56" y="48" class="ruler-text">195</text>
+            <line x1="62" y1="44" x2="72" y2="44" class="ruler-tick" />
+
+            <!-- 190 cm (y = 68) -->
+            <text x="56" y="72" class="ruler-text">190</text>
+            <line x1="62" y1="68" x2="72" y2="68" class="ruler-tick" />
+
+            <!-- 185 cm (y = 92) -->
+            <text x="56" y="96" class="ruler-text">185</text>
+            <line x1="62" y1="92" x2="72" y2="92" class="ruler-tick" />
+
+            <!-- 180 cm (y = 116) -->
+            <text x="56" y="120" class="ruler-text">180</text>
+            <line x1="62" y1="116" x2="72" y2="116" class="ruler-tick" />
+
+            <!-- 175 cm (y = 140) -->
+            <text x="56" y="144" class="ruler-text">175</text>
+            <line x1="62" y1="140" x2="72" y2="140" class="ruler-tick" />
+
+            <!-- 170 cm (y = 164) -->
+            <text x="56" y="168" class="ruler-text">170</text>
+            <line x1="62" y1="164" x2="72" y2="164" class="ruler-tick" />
+
+            <!-- 165 cm (y = 188) -->
+            <text x="56" y="192" class="ruler-text">165</text>
+            <line x1="62" y1="188" x2="72" y2="188" class="ruler-tick" />
+
+            <!-- 160 cm (y = 212) -->
+            <text x="56" y="216" class="ruler-text">160</text>
+            <line x1="62" y1="212" x2="72" y2="212" class="ruler-tick" />
+
+            <!-- 155 cm (y = 236) -->
+            <text x="56" y="240" class="ruler-text">155</text>
+            <line x1="62" y1="236" x2="72" y2="236" class="ruler-tick" />
+
+            <!-- 150 cm (y = 260) -->
+            <text x="56" y="264" class="ruler-text">150</text>
+            <line x1="62" y1="260" x2="72" y2="260" class="ruler-tick" />
+
+            <!-- 145 cm (y = 284) -->
+            <text x="56" y="288" class="ruler-text">145</text>
+            <line x1="62" y1="284" x2="72" y2="284" class="ruler-tick" />
+
+            <!-- 140 cm (y = 308) -->
+            <text x="56" y="312" class="ruler-text">140</text>
+            <line x1="62" y1="308" x2="72" y2="308" class="ruler-tick" />
+          </svg>
+
+          <!-- Cutout Model Image -->
+          <div class="model-container">
+            <img src="/static/profile_model.png" alt="Profile of woman standing for measurement calibration" class="model-img" />
+          </div>
+
+          <!-- Floor Baseline -->
+          <div class="ground-line"></div>
+        </div>
+      </section>
+
+      <!-- Right Column: "Your Measurements" Card -->
+      <section class="measurements-card">
+        <div class="card-top">
+          <h2 class="card-title">Your Measurements</h2>
+          <button class="unit-switch" aria-label="Units">
+            <span>CM</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <div class="measurement-rows">
+          <!-- Height Row -->
+          <div class="measure-item">
+            <div class="measure-left">
+              <div class="measure-icon" title="Height">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="4" r="2"></circle>
+                  <path d="M12 6v8"></path>
+                  <path d="m9 10 3-1 3 1"></path>
+                  <path d="m10 20 2-6 2 6"></path>
+                </svg>
+              </div>
+              <span class="measure-label">Height</span>
+            </div>
+            <span class="measure-val">165 cm</span>
+          </div>
+
+          <!-- Chest Row -->
+          <div class="measure-item">
+            <div class="measure-left">
+              <div class="measure-icon" title="Chest">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="4" r="1.5"></circle>
+                  <path d="M8 8h8l2 5-3 2-2-3-3 3-3-2 1-5Z"></path>
+                </svg>
+              </div>
+              <span class="measure-label">Chest</span>
+            </div>
+            <span class="measure-val">84 cm</span>
+          </div>
+
+          <!-- Waist Row -->
+          <div class="measure-item">
+            <div class="measure-left">
+              <div class="measure-icon" title="Waist">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 6h10l-2 6 2 6H7l2-6-2-6Z"></path>
+                </svg>
+              </div>
+              <span class="measure-label">Waist</span>
+            </div>
+            <span class="measure-val">62 cm</span>
+          </div>
+
+          <!-- Hip Row -->
+          <div class="measure-item">
+            <div class="measure-left">
+              <div class="measure-icon" title="Hip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 7c2 4 1 8 0 10h12c-1-2-2-6 0-10"></path>
+                  <path d="M9 17v-4a3 3 0 0 1 6 0v4"></path>
+                </svg>
+              </div>
+              <span class="measure-label">Hip</span>
+            </div>
+            <span class="measure-val">88 cm</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Action Cards (Upload images, Auto-detect landmarks, Start Measuring) -->
+    <footer class="bottom-bar">
+      <!-- Feature 1: Upload images -->
+      <a href="/samples" class="feature-box">
+        <div class="feature-icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+            <circle cx="9" cy="9" r="2"></circle>
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+          </svg>
+        </div>
+        <div class="feature-info">
+          <span class="feature-title">Upload images</span>
+          <span class="feature-sub">Upload front and side photos with a clear view of your body.</span>
+        </div>
+      </a>
+
+      <!-- Feature 2: Auto-detect landmarks -->
+      <a href="/samples" class="feature-box">
+        <div class="feature-icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 8V4h4"></path>
+            <path d="M20 8V4h-4"></path>
+            <path d="M4 16v4h4"></path>
+            <path d="M20 16v4h-4"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </div>
+        <div class="feature-info">
+          <span class="feature-title">Auto-detect landmarks</span>
+          <span class="feature-sub">Our AI detects key body points for precise measurements.</span>
+        </div>
+      </a>
+
+      <!-- Primary Action CTA -->
+      <a href="/samples" class="start-measuring-btn">
+        <span>Start Measuring</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+    </footer>
+  </div>
+</body>
+
+</html>

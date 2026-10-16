@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Measure Mate — AI Body Measurements</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <!-- Three.js & OrbitControls for 3D Body Mesh -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-studio: #f6f7f9;
+      --bg-white: #ffffff;
+      --text-main: #111215;
+      --text-muted: #5e626e;
+      --text-light: #7b808e;
+      --border-subtle: #e5e7eb;
+      --border-card: #f0f2f5;
+      --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.035);
+      --radius-subtle: 4px;
+      --neon-cyan: #38ef7d;
+      --wireframe-blue: #00d2ff;
+    }
+
+    html,
+    body {
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      background-color: var(--bg-studio);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Single-View Full Container ── */
+    .app-viewport {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      background: radial-gradient(
+        ellipse 80% 65% at 50% 40%,
+        #ffffff 0%,
+        #f8f9fa 50%,
+        var(--bg-studio) 100%
+      );
+    }
+
+    /* ── Topbar / Header ── */
+    .topbar {
+      width: 100%;
+      padding: 20px 56px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+    }
+
+    /* Logo badge + name */
+    .brand-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-badge {
+      border: 1.8px solid #0f1115;
+      border-radius: 1px;
+      padding: 3px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.12em;
+      line-height: 0.95;
+      font-weight: 800;
+      font-size: 10.5px;
+      user-select: none;
+    }
+
+    .brand-badge span {
+      display: block;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #0f1115;
+    }
+
+    /* Navigation Links */
+    .nav-links {
+      display: flex;
+      align-items: center;
+      list-style: none;
+      gap: 32px;
+    }
+
+    .nav-links li a {
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #3f424b;
+      letter-spacing: -0.01em;
+      position: relative;
+      padding-bottom: 5px;
+      transition: color 0.15s ease;
+    }
+
+    .nav-links li a:hover {
+      color: #0f1115;
+    }
+
+    .nav-links li.active a {
+      color: #0f1115;
+      font-weight: 600;
+    }
+
+    .nav-links li.active a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #0f1115;
+    }
+
+    /* Topbar Right Icons */
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: #1a1c22;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      opacity: 0.6;
+      transform: translateY(-1px);
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 1.8;
+    }
+
+    /* ── Main Workspace 3-Column Grid ── */
+    .workspace-grid {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 56px 16px;
+      display: grid;
+      grid-template-columns: 330px 1fr 340px;
+      gap: 20px;
+      position: relative;
+      z-index: 20;
+    }
+
+    /* ── Column 1: Input & Configuration Card ── */
+    .input-card {
+      background: var(--bg-white);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-subtle);
+      box-shadow: var(--card-shadow);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .section-headline {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .section-eyebrow {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #5d6270;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f1115;
+      letter-spacing: -0.01em;
+    }
+
+    /* Upload Dropzone */
+    .upload-zone {
+      border: 1.5px dashed #cfd3dc;
+      border-radius: var(--radius-subtle);
+      background: #fafafc;
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.18s ease;
+      min-height: 140px;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: #111215;
+      background: #f4f5f8;
+    }
+
+    .upload-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #eef0f4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #1a1c22;
+    }
+
+    .upload-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 1.8;
+    }
+
+    .upload-text-main {
+      font-size: 12px;
+      font-weight: 600;
+      color: #111215;
+    }
+
+    .upload-text-sub {
+      font-size: 10.5px;
+      color: var(--text-light);
+    }
+
+    .preview-box {
+      display: none;
+      width: 100%;
+      height: 130px;
+      position: relative;
+      border-radius: var(--radius-subtle);
+      overflow: hidden;
+    }
+
+    .preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #f0f2f5;
+    }
+
+    .btn-change-photo {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      background: rgba(17, 18, 21, 0.85);
+      color: #ffffff;
+      border: none;
+      border-radius: 2px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Quick Sample Picker */
+    .samples-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .samples-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #555964;
+    }
+
+    .samples-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .sample-pill {
+      border: 1px solid #e2e4e8;
+      border-radius: var(--radius-subtle);
+      padding: 6px 4px;
+      background: #fafafc;
+      font-size: 11px;
+      font-weight: 600;
+      color: #3b3e46;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .sample-pill:hover,
+    .sample-pill.active {
+      background: #111215;
+      color: #ffffff;
+      border-color: #111215;
+    }
+
+    /* Height Input Control */
+    .height-control {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .height-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .height-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #111215;
+    }
+
+    .unit-pills {
+      display: flex;
+      border: 1px solid #e2e4e8;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .unit-pill-btn {
+      background: #fafafc;
+      border: none;
+      padding: 3px 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #5d616d;
+      cursor: pointer;
+    }
+
+    .unit-pill-btn.active {
+      background: #111215;
+      color: #ffffff;
+    }
+
+    .height-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .height-input {
+      width: 100%;
+      height: 38px;
+      border: 1px solid #d4d7df;
+      border-radius: var(--radius-subtle);
+      padding: 0 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #111215;
+      outline: none;
+      transition: border-color 0.15s ease;
+      background: #ffffff;
+    }
+
+    .height-input:focus {
+      border-color: #111215;
+    }
+
+    .height-input-suffix {
+      position: absolute;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #8c909b;
+    }
+
+    /* Submit Button */
+    .btn-run-action {
+      background: #111215;
+      color: #ffffff;
+      border: 1px solid #111215;
+      border-radius: var(--radius-subtle);
+      height: 44px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-run-action:hover:not(:disabled) {
+      background: #23252c;
+      transform: translateY(-1px);
+    }
+
+    .btn-run-action:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    /* ── Column 2: 3D Body Mesh Model Viewer ── */
+    .model-viewport-card {
+      background: #0b0c10;
+      border: 1px solid #1a1c23;
+      border-radius: var(--radius-subtle);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .viewport-header {
+      position: absolute;
+      top: 14px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .model-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 4px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #e2e5eb;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #00d2ff;
+      box-shadow: 0 0 8px #00d2ff;
+      animation: pulseAnim 2s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* Angle Controls */
+    .view-controls {
+      display: flex;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .view-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #c9ccd6;
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 10.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .view-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    /* 3D Canvas element */
+    #three-canvas-container {
+      width: 100%;
+      height: 100%;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      position: relative;
+    }
+
+    #three-canvas-container:active {
+      cursor: grabbing;
+    }
+
+    /* Floating Callout Annotations Overlay */
+    .callout-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .callout-tag {
+      position: absolute;
+      background: rgba(14, 18, 27, 0.88);
+      border: 1px solid rgba(0, 210, 255, 0.35);
+      padding: 4px 8px;
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      pointer-events: auto;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .callout-tag:hover {
+      transform: scale(1.05);
+      border-color: #00d2ff;
+      background: rgba(14, 18, 27, 0.98);
+    }
+
+    .callout-tag::before {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #00d2ff;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #00d2ff;
+    }
+
+    .callout-tag.left-pinned::before {
+      right: -10px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .callout-tag.right-pinned::before {
+      left: -10px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .callout-label {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: #8c9cb8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .callout-val {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #00d2ff;
+      letter-spacing: -0.01em;
+    }
+
+    /* Standby overlay in 3D Viewport */
+    .viewport-standby {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
+      padding: 24px;
+      z-index: 8;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, rgba(11, 12, 16, 0.4) 0%, rgba(11, 12, 16, 0.85) 100%);
+    }
+
+    .standby-scanner-ring {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(0, 210, 255, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #00d2ff;
+      animation: rotateRing 12s linear infinite;
+    }
+
+    .standby-scanner-ring svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    @keyframes rotateRing {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .standby-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+
+    .standby-desc {
+      font-size: 11.5px;
+      color: #8c9cb8;
+      max-width: 260px;
+      line-height: 1.45;
+    }
+
+    /* Empty state in Metrics card */
+    .metrics-empty-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 10px;
+      padding: 20px 10px;
+      flex: 1;
+    }
+
+    .empty-icon-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #f4f5f8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #7b808e;
+    }
+
+    .empty-icon-circle svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .empty-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111215;
+    }
+
+    .empty-desc {
+      font-size: 11.5px;
+      color: var(--text-light);
+      line-height: 1.45;
+      max-width: 240px;
+    }
+
+    .empty-skeleton-preview {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .skeleton-pill {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 10px;
+      border: 1px dashed #e5e8ee;
+      border-radius: 3px;
+      background: #fafafc;
+      font-size: 11.5px;
+      color: #8c909c;
+    }
+
+    /* Specific Tag Positions */
+    #tag-shoulders { top: 22%; right: 18%; }
+    #tag-chest { top: 32%; left: 16%; }
+    #tag-waist { top: 44%; left: 14%; }
+    #tag-hips { top: 54%; right: 16%; }
+    #tag-arm { top: 40%; right: 12%; }
+    #tag-thigh { top: 66%; left: 18%; }
+    #tag-ankle { top: 82%; right: 20%; }
+
+    /* Interactive hint at bottom of viewer */
+    .viewport-footer {
+      position: absolute;
+      bottom: 12px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .viewport-hint {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.45);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Column 3: Measurements Card ── */
+    .results-card {
+      background: var(--bg-white);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-subtle);
+      box-shadow: var(--card-shadow);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 2px;
+    }
+
+    .results-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f1115;
+      letter-spacing: -0.01em;
+    }
+
+    .metrics-scroll {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .metric-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border: 1px solid #f0f2f5;
+      border-radius: 3px;
+      background: #fafafc;
+      transition: all 0.15s ease;
+    }
+
+    .metric-row:hover,
+    .metric-row.highlighted {
+      background: #ffffff;
+      border-color: #0f1115;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .metric-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .metric-color-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #0f1115;
+    }
+
+    .metric-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #3b3e47;
+    }
+
+    .metric-val-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+
+    .metric-num {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f1115;
+    }
+
+    .metric-unit-text {
+      font-size: 11px;
+      font-weight: 600;
+      color: #7b808e;
+    }
+
+    /* Actions at bottom of results */
+    .results-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-action-outline {
+      flex: 1;
+      background: transparent;
+      border: 1px solid #d4d7df;
+      border-radius: var(--radius-subtle);
+      height: 38px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #111215;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-action-outline:hover {
+      background: #f4f5f8;
+      border-color: #111215;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(11, 12, 16, 0.88);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 60;
+    }
+
+    .loading-overlay.active {
+      display: flex;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(0, 210, 255, 0.2);
+      border-top-color: #00d2ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .loading-step {
+      font-size: 12px;
+      color: #8c9cb8;
+    }
+
+    /* ── Responsive adjustments ── */
+    @media (max-width: 1150px) {
+      html, body { height: auto; max-height: none; overflow: auto; }
+      .app-viewport { height: auto; min-height: 100vh; }
+      .workspace-grid { grid-template-columns: 1fr; gap: 20px; padding: 20px 24px; }
+      .model-viewport-card { height: 500px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-viewport">
+    <!-- Topbar Header -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <!-- Logo -->
+        <a href="/" class="brand-wrap" aria-label="Measure Mate Home">
+          <div class="brand-badge">
+            <span>ME</span>
+            <span>MA</span>
+          </div>
+          <span class="brand-title">Measure Mate</span>
+        </a>
+
+        <!-- Main Navigation Links -->
+        <nav aria-label="Main Navigation">
+          <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/how-it-works">How it works</a></li>
+            <li class="active"><a href="/samples">Measurements</a></li>
+            <li><a href="/api">API</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <!-- Right Utility Icons (Account and Settings) -->
+      <div class="topbar-right">
+        <!-- Account / Profile -->
+        <button class="icon-btn" aria-label="Account" title="Account">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"></circle>
+            <path d="M20 21a8 8 0 1 0-16 0"></path>
+          </svg>
+        </button>
+
+        <!-- Settings -->
+        <button class="icon-btn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 3-Column Measurement Workspace -->
+    <main class="workspace-grid">
+      <!-- ── Column 1: Input & Configuration ── -->
+      <section class="input-card">
+        <div class="section-headline">
+          <span class="section-eyebrow">Input Stage</span>
+          <h2 class="section-title">Upload Photo</h2>
+        </div>
+
+        <!-- Hidden input for file upload -->
+        <input type="file" id="photo-input" accept="image/*" style="display:none;" />
+
+        <!-- Upload Dropzone -->
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('photo-input').click()">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+              <path d="M12 12v9"></path>
+              <path d="m16 16-4-4-4 4"></path>
+            </svg>
+          </div>
+          <div class="upload-text-main">Click or drop front photo</div>
+          <div class="upload-text-sub">Fitted clothing & clear posture recommended</div>
+        </div>
+
+        <!-- Preview Image after upload -->
+        <div class="preview-box" id="preview-box">
+          <img id="preview-img" src="" alt="Uploaded photo" />
+          <button class="btn-change-photo" onclick="document.getElementById('photo-input').click()">Change</button>
+        </div>
+
+        <!-- Quick Sample Picker -->
+        <div class="samples-block">
+          <span class="samples-label">Quick test samples:</span>
+          <div class="samples-row">
+            <button class="sample-pill" onclick="loadSample('/static/samples/sample1.png', 68, this)">Front Pose</button>
+            <button class="sample-pill" onclick="loadSample('/static/samples/sample2.png', 66, this)">Studio 2</button>
+            <button class="sample-pill" onclick="loadSample('/static/samples/sample3.png', 70, this)">Model 3</button>
+          </div>
+        </div>
+
+        <!-- Height Input & Unit Switch -->
+        <div class="height-control">
+          <div class="height-header">
+            <span class="height-label">Reference Height</span>
+            <div class="unit-pills">
+              <button class="unit-pill-btn active" id="btn-unit-cm" onclick="switchHeightUnit('cm')">CM</button>
+              <button class="unit-pill-btn" id="btn-unit-in" onclick="switchHeightUnit('in')">IN</button>
+            </div>
+          </div>
+          <div class="height-input-wrap">
+            <input type="number" id="height-input" class="height-input" value="173" step="0.5" />
+            <span class="height-input-suffix" id="height-suffix">cm</span>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <button class="btn-run-action" id="btn-run" onclick="submitAnalysis()">
+          <span>Extract Measurements</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </section>
+
+      <!-- ── Column 2: 3D Body Mesh Model Viewer ── -->
+      <section class="model-viewport-card">
+        <!-- Viewport Header -->
+        <div class="viewport-header">
+          <div class="model-badge">
+            <span class="pulse-dot"></span>
+            <span>3D Mesh Reconstruction</span>
+          </div>
+
+          <!-- Angle Switches -->
+          <div class="view-controls">
+            <button class="view-btn" onclick="setViewAngle('front')">Front</button>
+            <button class="view-btn" onclick="setViewAngle('side')">Side</button>
+            <button class="view-btn" onclick="setViewAngle('perspective')">3/4 View</button>
+            <button class="view-btn" onclick="resetCamera()">Reset</button>
+          </div>
+        </div>
+
+        <!-- 3D Three.js Container -->
+        <div id="three-canvas-container">
+          <!-- Standby Overlay (Visible in Default State) -->
+          <div class="viewport-standby" id="viewport-standby">
+            <div class="standby-scanner-ring">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="12" r="9"></circle>
+                <circle cx="12" cy="12" r="3.5"></circle>
+                <line x1="12" y1="2" x2="12" y2="6"></line>
+                <line x1="12" y1="18" x2="12" y2="22"></line>
+                <line x1="2" y1="12" x2="6" y2="12"></line>
+                <line x1="18" y1="12" x2="22" y2="12"></line>
+              </svg>
+            </div>
+            <span class="standby-title">3D Scanner on Standby</span>
+            <span class="standby-desc">Upload a photo to reconstruct 3D body posture and measurements</span>
+          </div>
+
+          <!-- Callout Pins Overlay (Hidden by Default until results are ready) -->
+          <div class="callout-overlay" style="display: none;">
+            <div class="callout-tag right-pinned" id="tag-shoulders" onmouseenter="highlightMetric('shoulder width')" onmouseleave="unhighlightMetric()">
+              <span class="callout-label">Shoulders</span>
+              <span class="callout-val" id="val-shoulders">—</span>
+            </div>
+
+            <div class="callout-tag left-pinned" id="tag-chest" onmouseenter="highlightMetric('chest')" onmouseleave="unhighlightMetric()">
+              <span class="callout-label">Chest</span>
+              <span class="callout-val" id="val-chest">—</span>
+            </div>
+
+            <div class="callout-tag left-pinned" id="tag-waist" onmouseenter="highlightMetric('waist')" onmouseleave="unhighlightMetric()">
+              <span class="callout-label">Waist</span>
+              <span class="callout-val" id="val-waist">—</span>
+            </div>
+
+            <div class="callout-tag right-pinned" id="tag-hips" onmouseenter="highlightMetric('hips')" onmouseleave="unhighlightMetric()">
+              <span class="callout-label">Hips</span>
+              <span class="callout-val" id="val-hips">—</span>
+            </div>
+
+            <div class="callout-tag right-pinned" id="tag-arm" onmouseenter="highlightMetric('arm length')" onmouseleave="unhighlightMetric()">
+              <span class="callout-label">Arm Length</span>
+              <span class="callout-val" id="val-arm">—</span>
+            </div>
+
+            <div class="callout-tag left-pinned" id="tag-thigh" onmouseenter="highlightMetric('thigh')" onmouseleave="unhighlightMetric()">
+              <span class="callout-label">Thigh</span>
+              <span class="callout-val" id="val-thigh">—</span>
+            </div>
+
+            <div class="callout-tag right-pinned" id="tag-ankle" onmouseenter="highlightMetric('ankle')" onmouseleave="unhighlightMetric()">
+              <span class="callout-label">Ankle</span>
+              <span class="callout-val" id="val-ankle">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Hint -->
+        <div class="viewport-footer">
+          <span class="viewport-hint">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+            </svg>
+            Drag to rotate 360° · Scroll to zoom
+          </span>
+          <span class="viewport-hint" id="mesh-status-hint">Standby Mode</span>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+          <div class="spinner"></div>
+          <div class="loading-title">Analyzing Pose &amp; Shape</div>
+          <div class="loading-step" id="loading-step-text">Fitting 3D parametric SMPL mesh...</div>
+        </div>
+      </section>
+
+      <!-- ── Column 3: Measurements Card ── -->
+      <section class="results-card">
+        <div class="results-header">
+          <h2 class="results-title">Extracted Metrics</h2>
+          <div class="unit-pills">
+            <button class="unit-pill-btn active" id="btn-disp-in" onclick="setDisplayUnit('in')">IN</button>
+            <button class="unit-pill-btn" id="btn-disp-cm" onclick="setDisplayUnit('cm')">CM</button>
+          </div>
+        </div>
+
+        <!-- Metric Scrollable List (Dynamic or Empty State) -->
+        <div class="metrics-scroll" id="metrics-list">
+          <!-- Injected dynamically via JavaScript -->
+        </div>
+
+        <!-- Export & Reset Actions -->
+        <div class="results-actions">
+          <button class="btn-action-outline" id="btn-copy" onclick="copyMeasurements()" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+            </svg>
+            <span>Copy Values</span>
+          </button>
+          <button class="btn-action-outline" id="btn-export" onclick="downloadJSON()" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Export JSON</span>
+          </button>
+          <button class="btn-action-outline" id="btn-reset" onclick="resetToDefault()" style="display: none;" title="Reset">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            <span>Reset</span>
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ── Global State (Defaults to NO results until user runs analysis)
+    let currentHeightUnit = 'cm';
+    let currentDisplayUnit = 'in';
+    let selectedFileBlob = null;
+    let latestMeasurements = null; // No results on default load
+
+    // ── Height Unit Switching
+    function switchHeightUnit(unit) {
+      const input = document.getElementById('height-input');
+      const val = parseFloat(input.value) || 0;
+      if (unit === 'cm' && currentHeightUnit === 'in') {
+        input.value = Math.round(val * 2.54);
+      } else if (unit === 'in' && currentHeightUnit === 'cm') {
+        input.value = (val / 2.54).toFixed(1);
+      }
+      currentHeightUnit = unit;
+      document.getElementById('height-suffix').textContent = unit;
+      document.getElementById('btn-unit-cm').classList.toggle('active', unit === 'cm');
+      document.getElementById('btn-unit-in').classList.toggle('active', unit === 'in');
+    }
+
+    // ── Display Unit Switching
+    function setDisplayUnit(unit) {
+      currentDisplayUnit = unit;
+      document.getElementById('btn-disp-cm').classList.toggle('active', unit === 'cm');
+      document.getElementById('btn-disp-in').classList.toggle('active', unit === 'in');
+      renderMetricsTable();
+      updateCalloutTags();
+    }
+
+    // ── File Upload & Drag-and-Drop
+    const dropZone = document.getElementById('upload-zone');
+    const photoInput = document.getElementById('photo-input');
+
+    photoInput.addEventListener('change', e => {
+      if (e.target.files && e.target.files[0]) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    function handleFileSelect(file) {
+      selectedFileBlob = file;
+      const url = URL.createObjectURL(file);
+      showPreview(url);
+      document.querySelectorAll('.sample-pill').forEach(p => p.classList.remove('active'));
+    }
+
+    function showPreview(url) {
+      dropZone.style.display = 'none';
+      const previewBox = document.getElementById('preview-box');
+      const previewImg = document.getElementById('preview-img');
+      previewImg.src = url;
+      previewBox.style.display = 'block';
+    }
+
+    // ── Quick Sample Loader (Selects photo & height, ready for user to click Extract)
+    async function loadSample(sampleUrl, heightInches, btn) {
+      document.querySelectorAll('.sample-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      showPreview(sampleUrl);
+
+      // Set height
+      if (currentHeightUnit === 'cm') {
+        document.getElementById('height-input').value = Math.round(heightInches * 2.54);
+      } else {
+        document.getElementById('height-input').value = heightInches;
+      }
+
+      // Fetch sample as file blob
+      try {
+        const resp = await fetch(sampleUrl);
+        const blob = await resp.blob();
+        selectedFileBlob = new File([blob], 'sample.png', { type: 'image/png' });
+      } catch (err) {
+        console.warn('Sample fetch fallback', err);
+      }
+    }
+
+    // Initialize with clean default state (NO results)
+    window.addEventListener('DOMContentLoaded', () => {
+      initThreeJS();
+      renderMetricsTable();
+      updateCalloutTags();
+    });
+
+    // ── Render Metrics List (Handles Default Empty State vs Computed State)
+    const METRIC_LABELS = {
+      "height": "Height",
+      "chest": "Chest Circumference",
+      "waist": "Waist Circumference",
+      "belly": "Belly / Abdomen",
+      "hips": "Hip Circumference",
+      "shoulder width": "Shoulder Width",
+      "arm length": "Arm Length",
+      "thigh": "Thigh Circumference",
+      "neck": "Neck Circumference",
+      "wrist": "Wrist Circumference",
+      "ankle": "Ankle Circumference"
+    };
+
+    function renderMetricsTable() {
+      const container = document.getElementById('metrics-list');
+      const btnCopy = document.getElementById('btn-copy');
+      const btnExport = document.getElementById('btn-export');
+      const btnReset = document.getElementById('btn-reset');
+      container.innerHTML = '';
+
+      // DEFAULT STATE: No measurements yet
+      if (!latestMeasurements) {
+        btnCopy.disabled = true;
+        btnExport.disabled = true;
+        btnReset.style.display = 'none';
+
+        container.innerHTML = `
+          <div class="metrics-empty-wrap">
+            <div class="empty-icon-circle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M4 8V4h4"></path>
+                <path d="M20 8V4h-4"></path>
+                <path d="M4 16v4h4"></path>
+                <path d="M20 16v4h-4"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </div>
+            <span class="empty-title">Awaiting Analysis</span>
+            <span class="empty-desc">Upload a photo and reference height to extract 11 physical body measurements.</span>
+            <div class="empty-skeleton-preview">
+              <div class="skeleton-pill"><span>Height</span><span>—</span></div>
+              <div class="skeleton-pill"><span>Chest</span><span>—</span></div>
+              <div class="skeleton-pill"><span>Waist</span><span>—</span></div>
+              <div class="skeleton-pill"><span>Hips</span><span>—</span></div>
+              <div class="skeleton-pill"><span>Shoulder Width</span><span>—</span></div>
+              <div class="skeleton-pill"><span>Arm Length</span><span>—</span></div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // POPULATED STATE: Measurements available
+      btnCopy.disabled = false;
+      btnExport.disabled = false;
+      btnReset.style.display = 'inline-flex';
+
+      Object.entries(latestMeasurements).forEach(([key, rawInches]) => {
+        const inches = parseFloat(rawInches);
+        const val = currentDisplayUnit === 'cm' ? (inches * 2.54).toFixed(1) : inches.toFixed(1);
+        const label = METRIC_LABELS[key] || key;
+
+        const row = document.createElement('div');
+        row.className = 'metric-row';
+        row.id = 'metric-row-' + key.replace(/\s+/g, '-');
+        row.innerHTML = `
+          <div class="metric-name-wrap">
+            <span class="metric-color-dot"></span>
+            <span class="metric-name">${label}</span>
+          </div>
+          <div class="metric-val-wrap">
+            <span class="metric-num">${val}</span>
+            <span class="metric-unit-text">${currentDisplayUnit}</span>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function updateCalloutTags() {
+      const calloutOverlay = document.querySelector('.callout-overlay');
+      const standbyOverlay = document.getElementById('viewport-standby');
+      const hint = document.getElementById('mesh-status-hint');
+
+      if (!latestMeasurements) {
+        if (calloutOverlay) calloutOverlay.style.display = 'none';
+        if (standbyOverlay) standbyOverlay.style.display = 'flex';
+        if (hint) hint.textContent = 'Standby Mode';
+        return;
+      }
+
+      if (calloutOverlay) calloutOverlay.style.display = 'block';
+      if (standbyOverlay) standbyOverlay.style.display = 'none';
+      if (hint) hint.textContent = 'SMPL 6,890 Vertices';
+
+      const format = (rawInches) => {
+        const inches = parseFloat(rawInches);
+        if (isNaN(inches)) return '—';
+        return currentDisplayUnit === 'cm' 
+          ? (inches * 2.54).toFixed(1) + ' cm'
+          : inches.toFixed(1) + ' in';
+      };
+
+      if (latestMeasurements['shoulder width']) document.getElementById('val-shoulders').textContent = format(latestMeasurements['shoulder width']);
+      if (latestMeasurements['chest']) document.getElementById('val-chest').textContent = format(latestMeasurements['chest']);
+      if (latestMeasurements['waist']) document.getElementById('val-waist').textContent = format(latestMeasurements['waist']);
+      if (latestMeasurements['hips']) document.getElementById('val-hips').textContent = format(latestMeasurements['hips']);
+      if (latestMeasurements['arm length']) document.getElementById('val-arm').textContent = format(latestMeasurements['arm length']);
+      if (latestMeasurements['thigh']) document.getElementById('val-thigh').textContent = format(latestMeasurements['thigh']);
+      if (latestMeasurements['ankle']) document.getElementById('val-ankle').textContent = format(latestMeasurements['ankle']);
+    }
+
+    function highlightMetric(key) {
+      const el = document.getElementById('metric-row-' + key.replace(/\s+/g, '-'));
+      if (el) el.classList.add('highlighted');
+    }
+
+    function unhighlightMetric() {
+      document.querySelectorAll('.metric-row').forEach(r => r.classList.remove('highlighted'));
+    }
+
+    // ── Run Analysis Trigger
+    async function submitAnalysis() {
+      if (!selectedFileBlob) {
+        alert('Please select or upload a front photo first.');
+        return;
+      }
+
+      const heightVal = parseFloat(document.getElementById('height-input').value);
+      if (!heightVal || isNaN(heightVal)) {
+        alert('Please enter a valid height value.');
+        return;
+      }
+
+      // Convert height to integer inches for the model
+      const heightInches = currentHeightUnit === 'cm' ? Math.round(heightVal / 2.54) : Math.round(heightVal);
+
+      // Show loader
+      const overlay = document.getElementById('loading-overlay');
+      const stepText = document.getElementById('loading-step-text');
+      overlay.classList.add('active');
+      stepText.textContent = 'Cropping & landmark detection...';
+
+      const formData = new FormData();
+      formData.append('image', selectedFileBlob);
+      formData.append('height', heightInches.toString());
+
+      try {
+        const response = await fetch('/process', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+
+        if (data.error) {
+          alert('Error: ' + data.error);
+        } else if (data.results) {
+          latestMeasurements = data.results;
+          renderMetricsTable();
+          updateCalloutTags();
+
+          // Reload 3D model mesh if available
+          if (data.model_url) {
+            loadOBJMesh(data.model_url);
+          }
+        }
+      } catch (err) {
+        alert('Server connection error. Please verify the backend is running.');
+      } finally {
+        overlay.classList.remove('active');
+      }
+    }
+
+    // ── Reset Back to Default State
+    function resetToDefault() {
+      latestMeasurements = null;
+      selectedFileBlob = null;
+      document.getElementById('photo-input').value = '';
+      document.getElementById('preview-box').style.display = 'none';
+      document.getElementById('preview-img').src = '';
+      dropZone.style.display = 'flex';
+      document.querySelectorAll('.sample-pill').forEach(p => p.classList.remove('active'));
+
+      // Remove 3D body from scene
+      if (bodyMesh) {
+        scene.remove(bodyMesh);
+        bodyMesh = null;
+      }
+      if (pointsMesh) {
+        scene.remove(pointsMesh);
+        pointsMesh = null;
+      }
+
+      renderMetricsTable();
+      updateCalloutTags();
+      resetCamera();
+    }
+
+    // ── Utility: Copy & Download
+    function copyMeasurements() {
+      if (!latestMeasurements) return;
+      const lines = Object.entries(latestMeasurements).map(([k, v]) => {
+        const val = currentDisplayUnit === 'cm' ? (parseFloat(v) * 2.54).toFixed(1) + ' cm' : v + ' in';
+        return `${METRIC_LABELS[k] || k}: ${val}`;
+      });
+      navigator.clipboard.writeText(lines.join('\n'));
+      alert('Measurements copied to clipboard!');
+    }
+
+    function downloadJSON() {
+      if (!latestMeasurements) return;
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(latestMeasurements, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute("href", dataStr);
+      a.setAttribute("download", "measurements.json");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ── Three.js 3D Body Mesh Viewer
+    // ─────────────────────────────────────────────────────────────
+    let scene, camera, renderer, controls, bodyMesh, pointsMesh;
+
+    function initThreeJS() {
+      const container = document.getElementById('three-canvas-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0b0c10);
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+      camera.position.set(0, 0.1, 2.5);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      // Controls
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxDistance = 5;
+      controls.minDistance = 1;
+      controls.target.set(0, 0, 0);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0x00d2ff, 1.2);
+      dirLight1.position.set(2, 3, 2);
+      scene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0x38ef7d, 0.8);
+      dirLight2.position.set(-2, -1, -2);
+      scene.add(dirLight2);
+
+      // Cyber Grid floor
+      const grid = new THREE.GridHelper(2.5, 24, 0x00d2ff, 0x182030);
+      grid.position.y = -0.95;
+      scene.add(grid);
+
+      // Animation loop
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // Responsive resize
+      window.addEventListener('resize', () => {
+        if (!container.clientWidth || !container.clientHeight) return;
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+    }
+
+    // ── OBJ File Parser & Geometry Builder
+    async function loadOBJMesh(url) {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) return;
+        const text = await resp.text();
+
+        const positions = [];
+        const indices = [];
+        const lines = text.split('\n');
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (line.startsWith('v ')) {
+            const parts = line.split(/\s+/);
+            positions.push(parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3]));
+          } else if (line.startsWith('f ')) {
+            const parts = line.split(/\s+/);
+            indices.push(
+              parseInt(parts[1].split('/')[0]) - 1,
+              parseInt(parts[2].split('/')[0]) - 1,
+              parseInt(parts[3].split('/')[0]) - 1
+            );
+          }
+        }
+
+        if (positions.length === 0) return;
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        if (indices.length > 0) geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+        geometry.center();
+
+        // Remove previous meshes
+        if (bodyMesh) scene.remove(bodyMesh);
+        if (pointsMesh) scene.remove(pointsMesh);
+
+        // 1. Sleek Dark Semi-Transparent Surface Body
+        const bodyMat = new THREE.MeshStandardMaterial({
+          color: 0x101c2a,
+          roughness: 0.4,
+          metalness: 0.6,
+          transparent: true,
+          opacity: 0.75,
+          wireframe: false
+        });
+
+        // 2. Glowing Cyan Wireframe Overlay
+        const wireMat = new THREE.MeshBasicMaterial({
+          color: 0x00d2ff,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.45
+        });
+
+        bodyMesh = new THREE.Mesh(geometry, bodyMat);
+        const wireMesh = new THREE.Mesh(geometry, wireMat);
+        bodyMesh.add(wireMesh);
+
+        // 3. Cybernetic Joint Points
+        const pointsMat = new THREE.PointsMaterial({
+          color: 0x38ef7d,
+          size: 0.015,
+          transparent: true,
+          opacity: 0.65
+        });
+        pointsMesh = new THREE.Points(geometry, pointsMat);
+        bodyMesh.add(pointsMesh);
+
+        // Orient model upright
+        bodyMesh.rotation.x = Math.PI; // Flip orientation if needed
+        bodyMesh.rotation.y = Math.PI;
+        scene.add(bodyMesh);
+
+        // Transition from standby to active reconstructed state
+        const standbyEl = document.getElementById('viewport-standby');
+        if (standbyEl) standbyEl.style.display = 'none';
+        const calloutEl = document.querySelector('.callout-overlay');
+        if (calloutEl) calloutEl.style.display = 'block';
+        const hintEl = document.getElementById('mesh-status-hint');
+        if (hintEl) hintEl.textContent = 'SMPL 6,890 Vertices';
+
+      } catch (err) {
+        console.warn('Could not load 3D OBJ model:', err);
+      }
+    }
+
+    // ── Angle Control Helpers
+    function setViewAngle(angle) {
+      if (!camera || !controls) return;
+      if (angle === 'front') {
+        camera.position.set(0, 0.1, 2.5);
+      } else if (angle === 'side') {
+        camera.position.set(2.5, 0.1, 0);
+      } else if (angle === 'perspective') {
+        camera.position.set(1.6, 0.8, 1.8);
+      }
+      controls.target.set(0, 0, 0);
+      controls.update();
+    }
+
+    function resetCamera() {
+      setViewAngle('front');
+    }
+  </script>
+</body>
+
+</html>

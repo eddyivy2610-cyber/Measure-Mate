@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Measure Mate — API (Coming Soon)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-studio: #f6f7f9;
+      --bg-white: #ffffff;
+      --text-main: #111215;
+      --text-muted: #5e626e;
+      --text-light: #7b808e;
+      --border-subtle: #e5e7eb;
+      --border-card: #f0f2f5;
+      --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.035);
+      --radius-subtle: 4px;
+    }
+
+    html,
+    body {
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      background-color: var(--bg-studio);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Single-View Full Container ── */
+    .app-viewport {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      background: radial-gradient(
+        ellipse 80% 65% at 50% 40%,
+        #ffffff 0%,
+        #f8f9fa 50%,
+        var(--bg-studio) 100%
+      );
+    }
+
+    /* ── Topbar / Header ── */
+    .topbar {
+      width: 100%;
+      padding: 22px 56px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+    }
+
+    /* Logo badge + name */
+    .brand-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-badge {
+      border: 1.8px solid #0f1115;
+      border-radius: 1px;
+      padding: 3px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.12em;
+      line-height: 0.95;
+      font-weight: 800;
+      font-size: 10.5px;
+      user-select: none;
+    }
+
+    .brand-badge span {
+      display: block;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #0f1115;
+    }
+
+    /* Navigation Links */
+    .nav-links {
+      display: flex;
+      align-items: center;
+      list-style: none;
+      gap: 32px;
+    }
+
+    .nav-links li a {
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #3f424b;
+      letter-spacing: -0.01em;
+      position: relative;
+      padding-bottom: 5px;
+      transition: color 0.15s ease;
+    }
+
+    .nav-links li a:hover {
+      color: #0f1115;
+    }
+
+    .nav-links li.active a {
+      color: #0f1115;
+      font-weight: 600;
+    }
+
+    .nav-links li.active a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #0f1115;
+    }
+
+    /* Topbar Right Icons (Account and Settings) */
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: #1a1c22;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      opacity: 0.6;
+      transform: translateY(-1px);
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 1.8;
+    }
+
+    /* ── Main Stage Container ── */
+    .main-stage {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 20;
+    }
+
+    /* Coming Soon Card */
+    .coming-soon-card {
+      background: var(--bg-white);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-subtle);
+      box-shadow: var(--card-shadow);
+      padding: 44px 52px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .card-left {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Status Badge */
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f4f5f8;
+      border: 1px solid #e5e8ee;
+      padding: 4px 12px;
+      border-radius: 2px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #0f1115;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #5b7ef6;
+      box-shadow: 0 0 8px #5b7ef6;
+      animation: pulseAnim 2s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .card-title {
+      font-size: clamp(32px, 3.2vw, 42px);
+      line-height: 1.12;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #0f1115;
+    }
+
+    .card-desc {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      max-width: 480px;
+    }
+
+    /* Early Access Email Input */
+    .access-form {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      max-width: 420px;
+    }
+
+    .access-input {
+      flex: 1;
+      height: 42px;
+      border: 1px solid #d4d7df;
+      border-radius: var(--radius-subtle);
+      padding: 0 14px;
+      font-size: 13.5px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s ease;
+      background: #fafafc;
+    }
+
+    .access-input:focus {
+      border-color: #0f1115;
+      background: #ffffff;
+    }
+
+    .btn-access {
+      background: #111215;
+      color: #ffffff;
+      border: 1px solid #111215;
+      border-radius: var(--radius-subtle);
+      padding: 0 20px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-access:hover {
+      background: #24262d;
+      transform: translateY(-1px);
+    }
+
+    .access-hint {
+      font-size: 11px;
+      color: var(--text-light);
+    }
+
+    /* ── Right: Code Preview ── */
+    .card-right {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .code-terminal {
+      background: #0d0f14;
+      border: 1px solid #1a1e27;
+      border-radius: var(--radius-subtle);
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .terminal-bar {
+      background: #141822;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1f2533;
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+
+    .dot.red { background: #ff5f56; }
+    .dot.yellow { background: #ffbd2e; }
+    .dot.green { background: #27c93f; }
+
+    .terminal-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #8c97ad;
+    }
+
+    .code-body {
+      padding: 18px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.65;
+      color: #c9d1d9;
+      overflow-x: auto;
+    }
+
+    .code-comment { color: #6e7681; }
+    .code-method { color: #58a6ff; font-weight: 600; }
+    .code-url { color: #79c0ff; }
+    .code-header { color: #d2a8ff; }
+    .code-param { color: #7ee787; }
+
+    /* Endpoints list */
+    .endpoint-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .endpoint-tag {
+      background: #f4f5f8;
+      border: 1px solid #e2e4e8;
+      border-radius: 2px;
+      padding: 4px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: #3b3f49;
+    }
+
+    .endpoint-tag strong {
+      color: #0f1115;
+    }
+
+    /* ── Bottom Bar / Footer ── */
+    .bottom-bar {
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 56px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 40;
+    }
+
+    .footer-left {
+      font-size: 11.5px;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      list-style: none;
+    }
+
+    .footer-links li a {
+      color: #4b4f59;
+      font-size: 11.5px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+
+    .footer-links li a:hover {
+      color: #0f1115;
+    }
+
+    /* ── Responsive adjustments ── */
+    @media (max-width: 1024px) {
+      html, body { height: auto; max-height: none; overflow: auto; }
+      .app-viewport { height: auto; min-height: 100vh; gap: 24px; }
+      .coming-soon-card { grid-template-columns: 1fr; gap: 28px; padding: 32px 24px; }
+      .main-stage { padding: 24px; }
+      .bottom-bar { padding: 20px 24px; flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-viewport">
+    <!-- Topbar Header -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <!-- Logo -->
+        <a href="/" class="brand-wrap" aria-label="Measure Mate Home">
+          <div class="brand-badge">
+            <span>ME</span>
+            <span>MA</span>
+          </div>
+          <span class="brand-title">Measure Mate</span>
+        </a>
+
+        <!-- Main Navigation Links -->
+        <nav aria-label="Main Navigation">
+          <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/how-it-works">How it works</a></li>
+            <li><a href="/samples">Measurements</a></li>
+            <li class="active"><a href="/api">API</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <!-- Right Utility Icons (Account and Settings) -->
+      <div class="topbar-right">
+        <!-- Account / Profile -->
+        <button class="icon-btn" aria-label="Account" title="Account">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"></circle>
+            <path d="M20 21a8 8 0 1 0-16 0"></path>
+          </svg>
+        </button>
+
+        <!-- Settings -->
+        <button class="icon-btn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Stage: Coming Soon -->
+    <main class="main-stage">
+      <div class="coming-soon-card">
+        <!-- Left Side: Status & Access Request -->
+        <div class="card-left">
+          <div class="badge-row">
+            <div class="status-badge">
+              <span class="pulse-dot"></span>
+              <span>Feature Coming Soon</span>
+            </div>
+          </div>
+
+          <h1 class="card-title">Measure Mate Developer API</h1>
+          <p class="card-desc">
+            We are building headless REST and WebSocket endpoints to power automated 3D human mesh reconstruction, virtual try-on, and tailor-accurate physical sizing directly inside your e-commerce platform.
+          </p>
+
+          <!-- Notification Form -->
+          <form class="access-form" onsubmit="event.preventDefault(); alert('Thank you! You have been added to the developer preview queue.');">
+            <input type="email" class="access-input" placeholder="developer@company.com" required />
+            <button type="submit" class="btn-access">Get Notified</button>
+          </form>
+          <span class="access-hint">Sign up for developer early access and API keys. Zero spam.</span>
+        </div>
+
+        <!-- Right Side: API Preview Terminal -->
+        <div class="card-right">
+          <div class="code-terminal">
+            <div class="terminal-bar">
+              <div class="terminal-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <span class="terminal-title">bash · cURL</span>
+            </div>
+            <pre class="code-body"><span class="code-comment"># Extract 11 3D body circumferences</span>
+curl -X <span class="code-method">POST</span> <span class="code-url">https://api.measuremate.ai/v1/process</span> \
+  -H <span class="code-header">"Authorization: Bearer mm_live_key"</span> \
+  -F <span class="code-param">"image=@front_pose.jpg"</span> \
+  -F <span class="code-param">"height_in=68"</span></pre>
+          </div>
+
+          <!-- Planned Endpoints -->
+          <div class="endpoint-tags">
+            <div class="endpoint-tag"><strong>POST</strong> /v1/process</div>
+            <div class="endpoint-tag"><strong>GET</strong> /v1/mesh.obj</div>
+            <div class="endpoint-tag"><strong>POST</strong> /v1/landmarks</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Bar -->
+    <footer class="bottom-bar">
+      <span class="footer-left">Measure Mate &copy; 2026. Developer Platform &amp; API Suite.</span>
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/how-it-works">How it works</a></li>
+        <li><a href="/samples">Measurements</a></li>
+        <li><a href="/api">API</a></li>
+      </ul>
+    </footer>
+  </div>
+</body>
+
+</html>
